@@ -61,3 +61,4 @@ Visit `http://127.0.0.1:8000/` safely from any modern browser.
 
 ---
 *Built intricately with AI, focusing deeply on hyper-personalization, striking visuals, and government-grade safety protocols.*
+# JAnSEVA-AI
