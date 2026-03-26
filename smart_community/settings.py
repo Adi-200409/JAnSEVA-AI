@@ -30,8 +30,7 @@ SECRET_KEY = 'django-insecure-bglz(%n(k91-mx)@%z86nxn-z^&h&_u*p-)p_p^4(g0s-b9+1s
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['janseva-ai.onrender.com', 'localhost', '127.0.0.1']
 
 # Application definition
 
