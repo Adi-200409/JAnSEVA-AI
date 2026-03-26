@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}Saved Schemes Vault{% endblock %}
+
+{% block extra_css %}
+<style>
+  .schemes-layout { display: grid; grid-template-columns: 1fr; gap: 30px; }
+  
+  .schemes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; min-height: 400px; align-items: start; }
+  
+  .scheme-card { background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 16px; padding: 1.5rem; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; gap: 1rem; position: relative; overflow: hidden; }
+  .scheme-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--border-light); transition: background 0.3s; }
+  .scheme-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-glow); border-color: rgba(255,255,255,0.1); }
+  .scheme-card:hover::before { background: var(--emerald); }
+
+  .scheme-card.Health::before { background: #ef4444; }
+  .scheme-card:hover.Health { border-color: rgba(239, 68, 68, 0.3); box-shadow: 0 8px 30px rgba(239, 68, 68, 0.15); }
+
+  .sc-category { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--emerald); }
+  .Health .sc-category { color: #ef4444; }
+  
+  .sc-name { font-size: 1.25rem; font-weight: 700; color: var(--text-main); line-height: 1.3; }
+  .sc-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .sc-label { font-size: 0.75rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.2rem; }
+  .sc-eligibility { font-size: 0.85rem; color: var(--text-main); font-weight: 500; }
+  .sc-link { color: var(--emerald); text-decoration: none; font-size: 0.9rem; font-weight: 600; display: inline-flex; align-items: center; transition: gap 0.2s; }
+  .sc-link:hover { gap: 5px; color: var(--emerald-hover); }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal-content { background: #09090b; border: 1px solid var(--border-light); width: 90%; max-width: 600px; max-height: 85vh; border-radius: 20px; display: flex; flex-direction: column; position: relative; transform: translateY(20px) scale(0.95); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); }
+  .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+  
+  .modal-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border-light); display: flex; flex-direction: column; gap: 0.5rem; position: relative;}
+  .modal-title { font-size: 1.5rem; font-weight: 800; color: var(--text-main); padding-right: 2rem;}
+  .modal-close { position: absolute; top: 1.5rem; right: 1.5rem; width: 32px; height: 32px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--border-light); color: var(--text-muted); font-size: 1.2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+  .modal-close:hover { color: #fff; transform: rotate(90deg); }
+  
+  .modal-body { padding: 2rem; overflow-y: auto; color: var(--text-main); line-height: 1.6; font-size: 0.95rem; }
+  .modal-body ul { padding-left: 1.2rem; margin-top: 0.5rem; }
+  .modal-body li { margin-bottom: 0.75rem; }
+  .modal-body strong { color: var(--emerald); }
+  
+  .modal-footer { padding: 1.5rem 2rem; border-top: 1px solid var(--border-light); background: #18181b; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; display: flex; justify-content: flex-end; }
+  .visit-btn { background: var(--emerald); color: #000; text-decoration: none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 700; transition: all 0.2s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2); }
+  .visit-btn:hover { background: var(--emerald-hover); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3); }
+
+  .empty-state { grid-column: 1 / -1; background: var(--card-bg); padding: 4rem 2rem; text-align: center; border-radius: 20px; border: 1px dashed var(--border-light); color: var(--text-muted); }
+  .empty-state .big { font-size: 3rem; margin-bottom: 1rem; }
+
+  .save-btn { color: var(--text-muted); border: 1px solid var(--border-light); }
+  .save-btn:hover { color: var(--emerald); border-color: var(--emerald); background: rgba(16,185,129,0.1); }
+  .saved-active { color: var(--emerald); border: 1px solid var(--emerald); background: rgba(16,185,129,0.15); box-shadow: 0 0 10px rgba(16,185,129,0.2); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page animate-fade-up delay-100">
+  <div style="margin-bottom: 2rem;">
+    <div class="page-tag animate-slide-in delay-200">Personal Vault</div>
+    <div class="page-title animate-fade-up delay-300">Saved Schemes 🔖</div>
+    <div class="page-sub animate-fade-up delay-300">Access your bookmarked Government programs and policies quickly without searching.</div>
+  </div>
+
+  <div class="schemes-layout">
+    <div class="schemes-grid animate-fade-up delay-500" id="schemes-grid">
+      <div class="empty-state">
+        <div class="spinner" style="margin: 0 auto 1rem auto; border-color:rgba(255,255,255,0.1); border-left-color:var(--emerald);"></div>
+        Loading your vault...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AI Details Modal -->
+<div class="modal-overlay" id="scheme-modal" onclick="if(event.target===this) closeModal()">
+  <div class="modal-content">
+    <div class="modal-header">
+      <button class="modal-close" onclick="closeModal(event)">&times;</button>
+      <div class="modal-title" id="modal-title">Scheme Name</div>
+      <div class="sc-label" style="font-size:0.75rem; font-weight: 600; text-transform: uppercase;">How to Apply</div>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-footer">
+      <a href="#" id="modal-link" target="_blank" class="visit-btn" style="display:none;">Visit Website &nbsp;⟶</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let allSchemes = [];
+
+  fetch('/api/schemes/?saved_only=true')
+    .then(r => r.json())
+    .then(data => {
+      allSchemes = data.schemes || [];
+      renderSchemes(allSchemes);
+    })
+    .catch(() => {
+      document.getElementById('schemes-grid').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>Could not load saved schemes.</div>';
+    });
+
+  function renderSchemes(schemes) {
+    const grid = document.getElementById('schemes-grid');
+    if (!schemes.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="big">🔖</div>You haven\'t saved any schemes yet. Browse the catalog and bookmark what you like!</div>';
+      return;
+    }
+    grid.innerHTML = schemes.map((s, idx) => `
+      <div class="scheme-card ${s.category}" style="animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards; opacity: 0; animation-delay: ${idx * 50}ms; transform: translateY(20px);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="sc-category">${s.category}</div>
+        </div>
+        <div class="sc-name">${s.name}</div>
+        <div class="sc-desc">${s.description}</div>
+        <div>
+          <div class="sc-label">Eligibility</div>
+          <div class="sc-eligibility">${s.eligibility}</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem;">
+          <button class="sc-link" style="background:none;border:none;cursor:pointer;padding:0;text-align:left;" onclick="openModal(${s.id})">⟶ &nbsp;Learn More</button>
+          <button onclick="toggleSave(${s.id})" id="save-btn-${s.id}" style="background:none;border:none;cursor:pointer;padding:0.4rem 0.8rem;border-radius:6px;font-size:0.85rem;transition:all 0.2s;" class="${s.is_saved ? 'saved-active' : 'save-btn'}">
+            ${s.is_saved ? '🔖 Saved' : '🔖 Save'}
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openModal(id) {
+    const scheme = allSchemes.find(s => s.id === id);
+    if (!scheme) return;
+    
+    document.getElementById('modal-title').innerText = scheme.name;
+    document.getElementById('modal-body').innerHTML = '<div style="color:var(--primary); font-weight:600; text-align:center; padding: 2.5rem;">Generating application steps using AI...</div>';
+    
+    const lnk = document.getElementById('modal-link');
+    lnk.style.display = 'none';
+    
+    document.getElementById('scheme-modal').classList.add('active');
+
+    fetch('/api/scheme/' + id + '/process/')
+      .then(r => r.json())
+      .then(data => {
+        if (data.process) document.getElementById('modal-body').innerHTML = data.process;
+        if (data.link) { lnk.href = data.link; lnk.style.display = 'inline-block'; }
+      });
+  }
+
+  function closeModal(e) {
+    if (e) e.preventDefault();
+    document.getElementById('scheme-modal').classList.remove('active');
+  }
+
+  function getCSRF() { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''; }
+
+  function toggleSave(id) {
+    fetch('/api/scheme/' + id + '/toggle-save/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRF() }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if(data.success) {
+        // If they unsave it from the Saved page, we can visually remove it or just update it
+        const btn = document.getElementById('save-btn-' + id);
+        if(data.is_saved) {
+           btn.className = 'saved-active';
+           btn.innerHTML = '🔖 Saved';
+        } else {
+           btn.className = 'save-btn';
+           btn.innerHTML = '🔖 Save';
+           // Refresh list by removing it
+           allSchemes = allSchemes.filter(x => x.id !== id);
+           renderSchemes(allSchemes);
+        }
+      }
+    });
+  }
+</script>
+{% endblock %}

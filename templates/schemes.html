@@ -1,0 +1,435 @@
+{% extends 'base.html' %}
+{% block title %}Government Schemes{% endblock %}
+{% block nav_schemes %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .filter-btn {
+    font-family: inherit; font-size: 0.875rem; font-weight: 500;
+    padding: 0.5rem 1.2rem; border: 1px solid var(--border-light); border-radius: 999px;
+    background: #09090b; color: var(--text-muted); cursor: pointer;
+    transition: all 0.2s ease; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--emerald); color: var(--emerald); background: rgba(16, 185, 129, 0.1); font-weight: 600; }
+
+  .schemes-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+
+  .scheme-card {
+    background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 16px;
+    padding: 1.8rem; position: relative; overflow: hidden;
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; flex-direction: column; gap: 0.8rem; box-shadow: var(--shadow-sm);
+  }
+  .scheme-card:hover { transform: translateY(-4px) scale(1.02); box-shadow: var(--shadow-glow); border-color: var(--emerald); }
+  .scheme-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .scheme-card.health::before      { background: var(--teal); }
+  .scheme-card.education::before   { background: var(--cyan); }
+  .scheme-card.employment::before  { background: var(--amber); }
+  .scheme-card.welfare::before     { background: var(--purple); }
+  .scheme-card.agriculture::before { background: #22c55e; }
+
+  .sc-category { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--primary); }
+  .sc-name     { font-size: 1.25rem; font-weight: 700; color: var(--text-main); line-height: 1.2; letter-spacing: -0.01em; }
+  .sc-desc     { font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-top: 0.25rem; }
+  .sc-eligibility { font-size: 0.875rem; color: var(--text-main); background: #18181b; border: 1px solid var(--border-light); border-radius: 8px; padding: 0.75rem; line-height: 1.5; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+  .sc-label    { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .sc-link     { font-family: inherit; font-size: 0.9rem; font-weight: 600; color: var(--emerald); text-decoration: none; transition: all 0.2s; align-self: flex-start; margin-top: 0.5rem; }
+  .sc-link:hover { color: var(--emerald-hover); transform: translateX(4px); text-shadow: 0 0 10px rgba(16,185,129,0.4); }
+
+  .empty-state { grid-column: 1/-1; text-align: center; padding: 3rem; color: var(--muted); }
+  .empty-state .big { font-size: 2.5rem; margin-bottom: 0.5rem; }
+
+  .loading { grid-column: 1/-1; text-align: center; padding: 2rem; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.1em; }
+
+  /* Scheme Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: center; z-index: 1000;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s; padding: 1rem;
+  }
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+  .modal-content {
+    background: #09090b; border: 1px solid var(--border-light); border-radius: 20px;
+    width: 100%; max-width: 650px; padding: 2.5rem; position: relative;
+    transform: translateY(20px); transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--shadow-md);
+  }
+  .modal-overlay.active .modal-content { transform: translateY(0); }
+  .modal-close {
+    position: absolute; top: 1.25rem; right: 1.25rem;
+    background: #f1f5f9; border: none; color: var(--text-muted); cursor: pointer;
+    width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem; transition: all 0.2s ease;
+  }
+  .modal-close:hover { color: #fff; transform: rotate(90deg); }
+  
+  .save-btn { color: var(--text-muted); border: 1px solid var(--border-light); }
+  .save-btn:hover { color: var(--emerald); border-color: var(--emerald); background: rgba(16,185,129,0.1); }
+  .saved-active { color: var(--emerald); border: 1px solid var(--emerald); background: rgba(16,185,129,0.15); box-shadow: 0 0 10px rgba(16,185,129,0.2); }
+  .modal-title { font-size: 1.5rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.5rem; line-height: 1.2; letter-spacing: -0.01em; }
+  .modal-body { font-size: 0.95rem; color: var(--text-main); line-height: 1.6; max-height: 50vh; overflow-y: auto; padding-right: 10px; }
+  .modal-body ul, .modal-body ol { margin: 0.5rem 0 0.5rem 1.5rem; padding-left: 0; }
+  .modal-body li { margin-bottom: 0.5rem; list-style-type: disc; }
+  .modal-body strong { color: var(--text-main); font-weight: 600; }
+  .modal-footer { margin-top: 1.5rem; display: flex; justify-content: flex-end; }
+  .visit-btn {
+    background: var(--emerald); color: #000; padding: 0.75rem 1.5rem; border-radius: 8px;
+    font-family: inherit; font-size: 0.9rem; font-weight: 700; box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    text-decoration: none; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: inline-flex; align-items: center; justify-content: center;
+  }
+  .visit-btn:hover { background: var(--emerald-hover); transform: translateY(-2px) scale(1.02); box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+
+  @media(max-width:900px) { .schemes-grid{grid-template-columns:1fr 1fr;} }
+  @media(max-width:580px) { .schemes-grid{grid-template-columns:1fr;} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page animate-fade-up delay-100">
+  <div class="page-tag animate-slide-in delay-200">Services</div>
+  <div class="page-title animate-fade-up delay-300">Government Schemes</div>
+  <div class="page-sub animate-fade-up delay-300">Browse available welfare, health, education and employment schemes</div>
+
+  <div class="filter-bar animate-fade-up delay-400">
+    <button class="filter-btn active" onclick="filterSchemes(null, null, this)">All</button>
+    <button class="filter-btn" onclick="filterSchemes('Social Welfare & Empowerment', null, this)">🤝 Social Welfare</button>
+    <button class="filter-btn" onclick="filterSchemes('Education & Learning', null, this)">🎓 Education</button>
+    <button class="filter-btn" onclick="filterSchemes('Agriculture', null, this)">🌾 Agriculture</button>
+    <button class="filter-btn" onclick="filterSchemes('Health & Wellness', null, this)">🏥 Health</button>
+  </div>
+
+  <div class="filter-bar animate-fade-up delay-450" style="margin-bottom: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
+    <span style="font-size: 0.9rem; color: var(--text-muted); display: flex; align-items: center; margin-right: 0.5rem; font-weight: 600;">LEVEL:</span>
+    <button class="filter-btn active" onclick="filterSchemes(null, '', this, true)">All Levels</button>
+    <button class="filter-btn" onclick="filterSchemes(null, 'Central', this, true)">🏛️ Central</button>
+    <button class="filter-btn" onclick="filterSchemes(null, 'State', this, true)">🏢 State</button>
+    <button class="filter-btn" onclick="filterSchemes(null, 'Gram Panchayat', this, true)">🏘️ Gram Panchayat</button>
+  </div>
+
+  <div class="animate-fade-up delay-450" style="margin-bottom: 2.5rem;">
+    <div style="display: flex; gap:15px; justify-content: center; align-items:center;">
+      <input type="text" id="scheme-search" placeholder="Search live schemes (e.g., student, widow, agriculture)..." style="width: 100%; max-width: 600px; padding: 1rem 1.5rem; border-radius: 999px; background: #09090b; border: 1px solid var(--border-light); color: var(--text-main); font-family: inherit; font-size: 1.05rem; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); outline: none; transition: all 0.2s;" onkeydown="handleSearch(event)" onfocus="this.style.borderColor='var(--emerald)'; this.style.boxShadow='0 0 0 2px rgba(16,185,129,0.2)'" onblur="this.style.borderColor='var(--border-light)'; this.style.boxShadow='inset 0 2px 4px rgba(0,0,0,0.2)'">
+      <button onclick="toggleAdvanced()" style="background:transparent; color:var(--emerald); border:1px solid var(--border-light); padding:1rem; border-radius:999px; cursor:pointer; font-size:1.1rem; transition:all 0.2s;" title="Advanced Demographic Filter" id="adv-toggle-btn">🎯</button>
+      <button onclick="executeSearch()" style="background:var(--emerald); color:#000; font-weight:700; padding:1rem 2rem; border-radius:999px; border:none; cursor:pointer; font-size:1.05rem; box-shadow: 0 4px 15px rgba(16,185,129,0.2); transition:all 0.2s; flex-shrink:0;">Discover</button>
+    </div>
+    
+    <div id="advanced-search-panel" style="display:none; max-width:700px; margin: 1.5rem auto 0 auto; background:rgba(255,255,255,0.02); border:1px solid var(--border-light); border-radius:12px; padding:1.5rem; text-align:left; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+       <div style="font-weight:700; margin-bottom:1rem; color:var(--emerald); display:flex; justify-content:space-between;"><span>Find Schemes For You</span><span style="font-size:0.8rem; color:var(--text-muted); font-weight:normal;">Demographic Matcher</span></div>
+       <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+         <div>
+           <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:0.4rem;">Target Gender</label>
+           <select id="adv-gender" onchange="applyDemographicFilter()" style="width:100%; border:1px solid var(--border-light); background:#050505; color:#fff; padding:0.8rem; border-radius:8px; font-family:inherit;"><option value="">Any</option><option value="Female">Female</option><option value="Male">Male</option></select>
+         </div>
+         <div>
+           <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:0.4rem;">Social Category (Caste)</label>
+           <select id="adv-caste" onchange="applyDemographicFilter()" style="width:100%; border:1px solid var(--border-light); background:#050505; color:#fff; padding:0.8rem; border-radius:8px; font-family:inherit;"><option value="">Any</option><option value="General">General</option><option value="SC/ST">SC/ST</option><option value="OBC">OBC</option></select>
+         </div>
+         <div>
+           <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:0.4rem;">Income Level</label>
+           <select id="adv-income" onchange="applyDemographicFilter()" style="width:100%; border:1px solid var(--border-light); background:#050505; color:#fff; padding:0.8rem; border-radius:8px; font-family:inherit;"><option value="">Any</option><option value="BPL">BPL (Below Poverty Line)</option><option value="APL">APL (Above Poverty Line)</option></select>
+         </div>
+         <div>
+           <label style="font-size:0.85rem; color:var(--text-muted); display:block; margin-bottom:0.4rem;">Occupation</label>
+           <select id="adv-occ" onchange="applyDemographicFilter()" style="width:100%; border:1px solid var(--border-light); background:#050505; color:#fff; padding:0.8rem; border-radius:8px; font-family:inherit;"><option value="">Any</option><option value="Student">Student</option><option value="Farmer">Farmer</option><option value="Entrepreneur">Entrepreneur / Business</option></select>
+         </div>
+       </div>
+       <div style="margin-top:1rem; display:flex; gap:0.75rem; justify-content:flex-end; align-items:center;">
+         <span id="demo-match-count" style="font-size:0.8rem; color:var(--text-muted);"></span>
+         <button onclick="resetDemographicFilter()" style="background:transparent; color:var(--text-muted); border:1px solid var(--border-light); padding:0.6rem 1.2rem; border-radius:8px; cursor:pointer; font-family:inherit; font-size:0.85rem; font-weight:600; transition:all 0.2s;">Reset</button>
+         <button onclick="applyDemographicFilter()" style="background:var(--emerald); color:#000; padding:0.6rem 1.5rem; border-radius:8px; border:none; cursor:pointer; font-family:inherit; font-size:0.85rem; font-weight:700; box-shadow: 0 4px 15px rgba(16,185,129,0.2); transition:all 0.2s;">Find Matching Schemes</button>
+       </div>
+    </div>
+  </div>
+
+  <div class="schemes-grid animate-fade-up delay-500" id="schemes-grid">
+    <div class="loading">Loading schemes…</div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="scheme-modal" onclick="closeModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal(event)">&times;</button>
+    <div class="modal-title" id="modal-title">Scheme Name</div>
+    <div class="sc-label" style="font-size:0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color:var(--text-muted); margin-bottom:0.4rem;">How to Apply</div>
+    <div class="modal-body" id="modal-body">
+      Implementation process details go here.
+    </div>
+    <div class="modal-footer">
+      <a href="#" id="modal-link" target="_blank" class="visit-btn" style="display:none;">Visit Website &nbsp;⟶</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  let allSchemes = [];
+
+  fetch('/api/schemes/')
+    .then(r => r.json())
+    .then(data => {
+      allSchemes = data.schemes || [];
+      renderSchemes(allSchemes);
+    })
+    .catch(() => {
+      document.getElementById('schemes-grid').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>Could not load schemes.</div>';
+    });
+
+  let currentCategory = null;
+  let currentLevel = '';
+
+  function handleSearch(e) {
+    if (e.key === 'Enter') executeSearch();
+  }
+
+  function toggleAdvanced() {
+    const panel = document.getElementById('advanced-search-panel');
+    const btn = document.getElementById('adv-toggle-btn');
+    if(panel.style.display === 'none') {
+      panel.style.display = 'block';
+      btn.style.background = 'var(--emerald)';
+      btn.style.color = '#000';
+    } else {
+      panel.style.display = 'none';
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--emerald)';
+    }
+  }
+
+  function executeSearch() {
+    let q = document.getElementById('scheme-search').value.trim();
+    
+    // Append Demographic Metadata if Advanced Panel is used
+    const gender = document.getElementById('adv-gender').value;
+    const caste = document.getElementById('adv-caste').value;
+    const income = document.getElementById('adv-income').value;
+    const occ = document.getElementById('adv-occ').value;
+    
+    let filters = [];
+    if(gender) filters.push("Gender: " + gender);
+    if(caste) filters.push("Caste: " + caste);
+    if(income) filters.push("Income: " + income);
+    if(occ) filters.push("Occupation: " + occ);
+    
+    let combinedQuery = q;
+    if(filters.length > 0) {
+       combinedQuery = (q ? q + " " : "") + "(Target Demographics -> " + filters.join(", ") + ")";
+    }
+    
+    if (!combinedQuery.trim()) {
+      applyFilters();
+      return;
+    }
+    
+    document.getElementById('schemes-grid').innerHTML = `
+      <div class="empty-state" style="grid-column: 1 / -1;">
+        <div class="spinner" style="border-color: rgba(255,255,255,0.1); border-left-color: var(--emerald); width: 45px; height: 45px; border-width: 3px; margin: 0 auto 1.5rem auto;"></div>
+        <div style="font-size:1.2rem; font-weight:700; color:var(--emerald);">Scanning Gov Databases...</div>
+        <div style="font-size:0.95rem; color:var(--text-muted); margin-top:0.5rem;">The AI is discovering active schemes for "${combinedQuery}"</div>
+      </div>
+    `;
+
+    fetch('/api/schemes/discover/?q=' + encodeURIComponent(combinedQuery))
+      .then(r => r.json())
+      .then(data => {
+        if(data.schemes) {
+          allSchemes = data.schemes;
+          currentCategory = null; currentLevel = '';
+          document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+          renderSchemes(allSchemes);
+        }
+      })
+      .catch(() => {
+        document.getElementById('schemes-grid').innerHTML = '<div class="empty-state"><div class="big">⚠️</div>Failed to reach discovery server.</div>';
+      });
+  }
+
+  function filterSchemes(category, level, btn, isLevelBtn = false) {
+    if (isLevelBtn) {
+      const levelBtns = btn.parentElement.querySelectorAll('.filter-btn');
+      levelBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLevel = level;
+    } else {
+      const catBtns = btn.parentElement.querySelectorAll('.filter-btn');
+      catBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCategory = category;
+    }
+    applyFilters();
+  }
+
+  function applyFilters() {
+    let filtered = allSchemes;
+    if (currentCategory) filtered = filtered.filter(s => s.category === currentCategory);
+    if (currentLevel) filtered = filtered.filter(s => s.level === currentLevel);
+    // Also apply demographic filters if panel is open
+    filtered = applyDemographicToList(filtered);
+    renderSchemes(filtered);
+  }
+
+  function applyDemographicToList(list) {
+    const gender = document.getElementById('adv-gender').value;
+    const caste  = document.getElementById('adv-caste').value;
+    const income = document.getElementById('adv-income').value;
+    const occ    = document.getElementById('adv-occ').value;
+
+    let filtered = list;
+
+    if (gender) {
+      filtered = filtered.filter(s => {
+        const g = (s.target_gender || '').toLowerCase();
+        return g === gender.toLowerCase() || g === 'all' || g === '';
+      });
+    }
+    if (caste) {
+      filtered = filtered.filter(s => {
+        const c = (s.target_caste || '').toLowerCase();
+        return c === caste.toLowerCase() || c === 'all' || c === '' || c.includes(caste.toLowerCase());
+      });
+    }
+    if (income) {
+      filtered = filtered.filter(s => {
+        const inc = (s.target_income || '').toLowerCase();
+        return inc === income.toLowerCase() || inc === 'any' || inc === 'all' || inc === '';
+      });
+    }
+    if (occ) {
+      filtered = filtered.filter(s => {
+        const o = (s.target_occupation || '').toLowerCase();
+        return o === occ.toLowerCase() || o === 'none' || o === 'all' || o === '' || o.includes(occ.toLowerCase());
+      });
+    }
+
+    return filtered;
+  }
+
+  function applyDemographicFilter() {
+    let filtered = allSchemes;
+    if (currentCategory) filtered = filtered.filter(s => s.category === currentCategory);
+    if (currentLevel) filtered = filtered.filter(s => s.level === currentLevel);
+    filtered = applyDemographicToList(filtered);
+
+    // Update match count
+    const countEl = document.getElementById('demo-match-count');
+    countEl.textContent = filtered.length + ' scheme' + (filtered.length !== 1 ? 's' : '') + ' matched';
+    countEl.style.color = filtered.length > 0 ? 'var(--emerald)' : 'var(--text-muted)';
+
+    renderSchemes(filtered);
+  }
+
+  function resetDemographicFilter() {
+    document.getElementById('adv-gender').value = '';
+    document.getElementById('adv-caste').value = '';
+    document.getElementById('adv-income').value = '';
+    document.getElementById('adv-occ').value = '';
+    document.getElementById('demo-match-count').textContent = '';
+    applyFilters();
+  }
+
+  function renderSchemes(schemes) {
+    const grid = document.getElementById('schemes-grid');
+    if (!schemes.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="big">📭</div>No schemes found for this category.</div>';
+      return;
+    }
+    grid.innerHTML = schemes.map((s, idx) => `
+      <div class="scheme-card ${s.category}" style="animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards; opacity: 0; animation-delay: ${idx * 50}ms; transform: translateY(20px);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="sc-category">${s.category}</div>
+          <span class="status-badge" style="background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-light); font-size: 0.65rem; padding: 0.2rem 0.6rem; border-radius: 4px;">${s.level}</span>
+        </div>
+        <div class="sc-name">${s.name}</div>
+        
+        <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem; margin-bottom:0.8rem;">
+          ${s.ministry ? '<span style="background:rgba(255,255,255,0.02); color:var(--text-muted); font-size:0.65rem; padding:0.2rem 0.5rem; border-radius:4px; border:1px solid var(--border-light);">Gov: ' + s.ministry + '</span>' : ''}
+          ${s.state_name ? '<span style="background:rgba(255,255,255,0.02); color:var(--emerald); font-size:0.65rem; padding:0.2rem 0.5rem; border-radius:4px; border:1px solid rgba(16,185,129,0.3);">State: ' + s.state_name + '</span>' : ''}
+          ${s.target_gender && s.target_gender !== 'All' ? '<span style="background:rgba(255,255,255,0.02); color:#a78bfa; font-size:0.65rem; padding:0.2rem 0.5rem; border-radius:4px; border:1px solid rgba(167,139,250,0.3);">Target: ' + s.target_gender + '</span>' : ''}
+          ${s.target_caste && s.target_caste !== 'All' ? '<span style="background:rgba(255,255,255,0.02); color:#fcd34d; font-size:0.65rem; padding:0.2rem 0.5rem; border-radius:4px; border:1px solid rgba(252,211,77,0.3);">Category: ' + s.target_caste + '</span>' : ''}
+          ${s.target_income && s.target_income !== 'Any' ? '<span style="background:rgba(255,255,255,0.02); color:#fb923c; font-size:0.65rem; padding:0.2rem 0.5rem; border-radius:4px; border:1px solid rgba(251,146,60,0.3);">Income: ' + s.target_income + '</span>' : ''}
+          ${s.target_occupation && s.target_occupation !== 'None' ? '<span style="background:rgba(255,255,255,0.02); color:#60a5fa; font-size:0.65rem; padding:0.2rem 0.5rem; border-radius:4px; border:1px solid rgba(96,165,250,0.3);">Job: ' + s.target_occupation + '</span>' : ''}
+        </div>
+        
+        <div class="sc-desc">${s.description}</div>
+        <div>
+          <div class="sc-label">Eligibility</div>
+          <div class="sc-eligibility">${s.eligibility}</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.5rem;">
+          <button class="sc-link" style="background:none;border:none;cursor:pointer;padding:0;text-align:left;" onclick="openModal(${s.id})">⟶ &nbsp;Learn More</button>
+          <button onclick="toggleSave(${s.id})" id="save-btn-${s.id}" style="background:none;border:none;cursor:pointer;padding:0.4rem 0.8rem;border-radius:6px;font-size:0.85rem;transition:all 0.2s;" class="${s.is_saved ? 'saved-active' : 'save-btn'}">
+            ${s.is_saved ? '🔖 Saved' : '🔖 Save'}
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openModal(id) {
+    const scheme = allSchemes.find(s => s.id === id);
+    if (!scheme) return;
+    
+    document.getElementById('modal-title').innerText = scheme.name;
+    document.getElementById('modal-body').innerHTML = '<div style="color:var(--primary); font-weight:600; text-align:center; padding: 2.5rem;">Generating application steps using AI...</div>';
+    
+    const lnk = document.getElementById('modal-link');
+    lnk.style.display = 'none';
+    
+    document.getElementById('scheme-modal').classList.add('active');
+
+    fetch('/api/scheme/' + id + '/process/')
+      .then(r => r.json())
+      .then(data => {
+        if (data.process) {
+          document.getElementById('modal-body').innerHTML = data.process;
+        } else {
+          document.getElementById('modal-body').innerHTML = 'We could not generate the steps right now.';
+        }
+        
+        if (data.link) {
+          lnk.href = data.link;
+          lnk.style.display = 'inline-block';
+        } else {
+          lnk.href = '#';
+        }
+      })
+      .catch(() => {
+        document.getElementById('modal-body').innerHTML = '<div style="color:var(--error);">Failed to load application steps. Please try again.</div>';
+      });
+  }
+
+  function closeModal(e) {
+    if (e) e.preventDefault();
+    document.getElementById('scheme-modal').classList.remove('active');
+  }
+
+  function getCSRF() { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''; }
+
+  function toggleSave(id) {
+    fetch('/api/scheme/' + id + '/toggle-save/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRF() }
+    })
+    .then(r => r.json())
+    .then(data => {
+      if(data.success) {
+        const btn = document.getElementById('save-btn-' + id);
+        if(data.is_saved) {
+           btn.className = 'saved-active';
+           btn.innerHTML = '🔖 Saved';
+        } else {
+           btn.className = 'save-btn';
+           btn.innerHTML = '🔖 Save';
+        }
+        const s = allSchemes.find(x => x.id === id);
+        if(s) s.is_saved = data.is_saved;
+      }
+    });
+  }
+
+</script>
+{% endblock %}

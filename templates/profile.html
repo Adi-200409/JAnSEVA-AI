@@ -1,0 +1,230 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block nav_profile %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .profile-container {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+  }
+  
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .card:hover { border-color: var(--emerald); box-shadow: var(--shadow-glow); }
+
+  .section-title { font-size: 1.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem; }
+  .section-title i { font-style: normal; font-size: 1.4rem; padding: 0.5rem; background: rgba(16,185,129,0.1); border-radius: 12px; color: var(--emerald); display:inline-flex; align-items:center; justify-content:center; }
+
+  .field-group { margin-bottom: 1.5rem; }
+  .field-group label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.6rem; letter-spacing: 0.02em; }
+  
+  .input-control {
+    width: 100%;
+    background: #18181b;
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    color: var(--text-main);
+    padding: 0.875rem 1.15rem;
+    font-family: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .input-control::placeholder { color: #52525b; }
+  .input-control:read-only { background: #0a0a0a; color: #71717a; border-color: #27272a; cursor: not-allowed; box-shadow: none; }
+  .input-control:focus:not(:read-only) { border-color: var(--emerald); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); background: #0a0a0a; }
+
+  select.input-control { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 1.15rem center; background-size: 1.2em; cursor: pointer; }
+  
+  textarea.input-control { resize: vertical; min-height: 80px; }
+
+  .btn-save {
+    background: var(--emerald);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 2.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .btn-save:hover { background: #34d399; transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5); }
+  .btn-save:active { transform: translateY(0); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+  .btn-save:disabled { background: #059669; cursor: not-allowed; transform: none; box-shadow: none; color: rgba(0,0,0,0.5); }
+
+  .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1.15rem 1.5rem; border-radius: 14px; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 0.75rem; transform: translateY(100px); opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1000; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.ok { background: #064e3b; border: 1px solid #10b981; color: #ecfdf5; }
+  .toast.err { background: #7f1d1d; border: 1px solid #ef4444; color: #fef2f2; }
+  .toast-icon { display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.2); width: 24px; height: 24px; border-radius: 50%; font-size: 0.8rem; }
+
+  @media(max-width: 900px) { .profile-container { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page animate-fade-up delay-100">
+  <div class="page-tag animate-slide-in delay-200">Account Settings</div>
+  <div class="page-title animate-fade-up delay-300">My Profile</div>
+  <div class="page-sub animate-fade-up delay-300">Manage your personal information, skills, and health data for AI recommendations.</div>
+
+  <form id="profile-form" class="profile-container animate-fade-up delay-400" onsubmit="saveProfile(event)">
+    
+    <!-- Left Column: Basic Info -->
+    <div class="card">
+      <div class="section-title"><i>👤</i> Personal Details</div>
+      
+      <div class="field-group">
+        <label>Full Name</label>
+        <input type="text" id="fn" class="input-control" readonly>
+      </div>
+      
+      <div class="field-group">
+        <label>Email Address</label>
+        <input type="email" id="fe" class="input-control" readonly>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Age</label>
+          <input type="number" id="fa" class="input-control" placeholder="e.g. 28" min="1" max="120">
+        </div>
+        <div class="field-group" style="margin-bottom:0;">
+          <label>Location</label>
+          <input type="text" id="fl" class="input-control" placeholder="City, State">
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Career & Health -->
+    <div class="card">
+      <div class="section-title"><i>🎓</i> Background & Wellness</div>
+      
+      <div class="field-group">
+        <label>Education Level</label>
+        <select id="fed" class="input-control">
+          <option value="">Select your highest education</option>
+          <option value="none">No Formal Education</option>
+          <option value="primary">Primary School</option>
+          <option value="secondary">Secondary / High School</option>
+          <option value="graduate">Graduate (Bachelor's)</option>
+          <option value="postgrad">Post Graduate (Master's / PhD)</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>Skills & Expertise</label>
+        <textarea id="fs" class="input-control" rows="2" placeholder="e.g. Python, Digital Marketing, Woodworking (Comma-separated)"></textarea>
+      </div>
+
+      <div class="field-group">
+        <label>Health Concerns</label>
+        <textarea id="fh" class="input-control" rows="2" placeholder="e.g. Diabetes, None, seeking general wellness tips"></textarea>
+      </div>
+      
+      <div style="margin-top: 2rem; text-align: right;">
+        <button type="submit" class="btn-save" id="btn-save">Save Changes <span style="font-size:1.2rem;line-height:0;">→</span></button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast">
+  <span id="toast-icon" class="toast-icon"></span>
+  <span id="toast-msg"></span>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function getCSRF() { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''; }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.className = 'toast show ' + type;
+    document.getElementById('toast-icon').innerText = type === 'ok' ? '✓' : '✗';
+    document.getElementById('toast-msg').innerText = msg;
+    setTimeout(() => { t.classList.remove('show'); }, 4000);
+  }
+
+  // Load Profile on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/profile/')
+      .then(r => r.json())
+      .then(data => {
+        if(data.success) {
+          document.getElementById('fn').value  = data.full_name || '';
+          document.getElementById('fe').value  = data.email || '';
+          document.getElementById('fa').value  = data.age || '';
+          document.getElementById('fl').value  = data.location || '';
+          document.getElementById('fed').value = data.education || '';
+          document.getElementById('fs').value  = data.skills || '';
+          document.getElementById('fh').value  = data.health_concern || '';
+        } else {
+          showToast('Failed to load profile data.', 'err');
+        }
+      })
+      .catch(() => showToast('Network Error loading profile.', 'err'));
+  });
+
+  // Save Profile details
+  function saveProfile(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-save');
+    btn.disabled = true;
+    btn.innerHTML = 'Saving...';
+    
+    // Read optional integer
+    let ageVal = document.getElementById('fa').value.trim();
+    // Map empty string to null for DB PositiveIntegerField
+    ageVal = ageVal ? parseInt(ageVal, 10) : null;
+
+    const payload = {
+      age: ageVal,
+      location: document.getElementById('fl').value.trim(),
+      education: document.getElementById('fed').value,
+      skills: document.getElementById('fs').value.trim(),
+      health_concern: document.getElementById('fh').value.trim()
+    };
+
+    fetch('/api/profile/update/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+      body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+      btn.disabled = false;
+      btn.innerHTML = 'Save Changes <span style="font-size:1.2rem;line-height:0;">→</span>';
+      if(data.success) {
+        showToast('Profile updated successfully!', 'ok');
+      } else {
+        showToast(data.error || 'Failed to update profile.', 'err');
+      }
+    })
+    .catch(() => {
+      btn.disabled = false;
+      btn.innerHTML = 'Save Changes <span style="font-size:1.2rem;line-height:0;">→</span>';
+      showToast('Cannot connect to server.', 'err');
+    });
+  }
+</script>
+{% endblock %}

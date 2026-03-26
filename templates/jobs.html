@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}AI Job Matches{% endblock %}
+{% block nav_jobs %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+  .btn-magic { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; padding: 1rem 1.75rem; border-radius: 12px; font-weight: 700; font-size: 1.05rem; cursor: pointer; color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: inline-flex; align-items: center; gap: 0.5rem; }
+  .btn-magic:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5); }
+  .btn-magic:active { transform: translateY(0); box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
+
+  .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+  
+  .job-card { background: var(--card-bg); border: 1px solid var(--border-light); border-radius: 20px; padding: 2.25rem; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: var(--shadow-sm); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+  .job-card:hover { border-color: var(--emerald); box-shadow: var(--shadow-glow); transform: translateY(-4px); }
+  
+  .job-score { position: absolute; top: 1.5rem; right: 1.5rem; background: rgba(16, 185, 129, 0.15); color: var(--emerald); font-weight: 800; font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 30px; border: 1px solid rgba(16,185,129,0.3); }
+  
+  .job-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 1.25rem; padding-right: 4.5rem; letter-spacing: -0.01em; line-height: 1.3; }
+  .job-desc { font-size: 0.95rem; color: var(--text-muted); line-height: 1.7; flex-grow: 1; }
+  .job-date { margin-top: 1.5rem; font-size: 0.8rem; color: #52525b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  .empty-state { grid-column: 1 / -1; background: var(--card-bg); border: 1px dashed var(--border-light); border-radius: 20px; padding: 4rem 2rem; text-align: center; color: var(--text-muted); }
+  .empty-state i { font-size: 3rem; margin-bottom: 1rem; color: #3f3f46; display: block; font-style: normal; }
+  
+  /* Loading Overlay */
+  #loading { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(12px); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; color: #fff; text-align: center;}
+  .spinner { width: 50px; height: 50px; border: 4px solid rgba(16, 185, 129, 0.2); border-left-color: var(--emerald); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1.5rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loading h2 { font-size: 1.75rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -0.01em;}
+  #loading p { color: var(--text-muted); max-width: 400px; font-size: 1.05rem; line-height: 1.5; }
+
+  @media(max-width: 768px) { .header-area { flex-direction: column; align-items: flex-start; gap: 1.5rem; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page animate-fade-up delay-100">
+  <div class="header-area">
+    <div>
+      <div class="page-tag animate-slide-in delay-200">Personalized Career</div>
+      <div class="page-title animate-fade-up delay-300">AI Job Matches</div>
+      <div class="page-sub animate-fade-up delay-300">Opportunities tailored perfectly to your unique skills and education.</div>
+    </div>
+    <button class="btn-magic animate-fade-up delay-400" onclick="generateJobs()">
+      <span>✨ Generate AI Matches</span>
+    </button>
+  </div>
+
+  <div class="jobs-grid animate-fade-up delay-500" id="jobs-box">
+    <!-- Rendered via JS -->
+  </div>
+</div>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <h2>Analyzing Profile...</h2>
+  <p>Our AI is scouring the database to find the perfect roles that match your unique skill set.</p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function getCSRF() { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''; }
+
+  const box = document.getElementById('jobs-box');
+
+  function renderJobs(jobs) {
+    if (!jobs || jobs.length === 0) {
+      box.innerHTML = `
+        <div class="empty-state">
+          <i>✨</i>
+          <h3>No matches yet</h3>
+          <p style="margin-top:0.5rem;">Click "Generate AI Matches" above to let our AI analyze your profile.</p>
+        </div>
+      `;
+      return;
+    }
+
+    let h = '';
+    jobs.forEach(j => {
+      // Highlight certain keywords softly
+      let safeDesc = j.description.replace(/(\$[0-9,]+(?:k|K)?|-\s?\$[0-9,]+(?:k|K)?)/g, '<strong style="color:var(--text-main);">$1</strong>');
+      h += `
+        <div class="job-card">
+          <div class="job-score">${j.match_score}% Match</div>
+          <div class="job-title">${j.title}</div>
+          <div class="job-desc">${safeDesc}</div>
+          <div class="job-date">Found ${j.created_at}</div>
+        </div>
+      `;
+    });
+    box.innerHTML = h;
+  }
+
+  // Initial Load
+  document.addEventListener('DOMContentLoaded', () => {
+    fetch('/api/jobs/')
+      .then(r => r.json())
+      .then(data => {
+        if(data.success) renderJobs(data.jobs);
+      })
+      .catch(e => console.error(e));
+  });
+
+  // Generate Flow
+  function generateJobs() {
+    document.getElementById('loading').style.display = 'flex';
+    fetch('/api/jobs/generate/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() }
+    })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('loading').style.display = 'none';
+      if(data.success) {
+        renderJobs(data.jobs);
+      } else {
+        alert("Error Generating roles:\n" + (data.error || "Please fill your profile first!"));
+      }
+    })
+    .catch(() => {
+      document.getElementById('loading').style.display = 'none';
+      alert('Network Error connecting to AI engine.');
+    });
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 2rem;
+  }
+
+  .metric {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .metric:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-glow);
+    border-color: var(--emerald);
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .info-row:last-child {
+    border-bottom: none;
+  }
+
+  .ir-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .ir-val {
+    font-size: 0.82rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .quick-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+  }
+
+  .quick-link {
+    background: var(--card-bg);
+    border: 1px solid var(--border-light);
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: var(--text-main);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .quick-link:hover {
+    border-color: var(--emerald);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--shadow-glow);
+  }
+
+  .ql-icon {
+    font-size: 1.6rem;
+    color: var(--emerald);
+  }
+
+  .ql-title {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-main);
+    letter-spacing: -0.01em;
+  }
+
+  .ql-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  /* ── Tablet ── */
+  @media (max-width: 900px) {
+    .metrics {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .cards {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .quick-links {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 580px) {
+    .metrics {
+      grid-template-columns: 1fr;
+    }
+
+    .cards {
+      grid-template-columns: 1fr;
+    }
+
+    .quick-links {
+      grid-template-columns: 1fr;
+    }
+
+    .stat-banner {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 0.75rem !important;
+      padding: 1rem 1.2rem !important;
+      width: 100% !important;
+    }
+
+    .stat-banner > div[style*="width:1px"] {
+      width: 100% !important;
+      height: 1px !important;
+    }
+
+    .quick-link {
+      padding: 1.2rem;
+    }
+
+    .ql-title {
+      font-size: 0.95rem;
+    }
+
+    .ql-desc {
+      font-size: 0.8rem;
+    }
+
+    #ai-feedback-input {
+      max-width: 100% !important;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page animate-fade-up delay-100">
+  <div class="page-tag animate-slide-in delay-200">Resident Dashboard</div>
+  <div class="page-title animate-fade-up delay-300">Welcome back, {{ user.full_name }}</div>
+  <div class="page-sub animate-fade-up delay-300">All systems nominal · Last sync: just now</div>
+
+  <div class="stat-banner animate-fade-up delay-350"
+    style="display:inline-flex; gap:1.5rem; margin-top:1.5rem; margin-bottom: 0.5rem; background:rgba(255,255,255,0.02); padding:1rem 2rem; border-radius:12px; border:1px solid var(--border-light); align-items:center;">
+    <div><strong style="color:var(--emerald); font-size:1.6rem;">{{ total_count }}</strong> <span
+        style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; margin-left:0.3rem;">Total
+        Schemes</span></div>
+    <div style="width:1px; height:24px; background:var(--border-light);"></div>
+    <div><strong style="color:var(--emerald); font-size:1.6rem;">{{ central_count }}</strong> <span
+        style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; margin-left:0.3rem;">Central Schemes</span>
+    </div>
+    <div style="width:1px; height:24px; background:var(--border-light);"></div>
+    <div><strong style="color:var(--emerald); font-size:1.6rem;">{{ state_count }}</strong> <span
+        style="color:var(--text-muted); font-size:0.8rem; text-transform:uppercase; letter-spacing:0.05em; margin-left:0.3rem;">States/UTs Schemes</span>
+    </div>
+  </div>
+
+
+  <!-- Quick Links -->
+  <div class="card-title animate-fade-up delay-400">Quick Access</div>
+  <div class="quick-links animate-fade-up delay-400" style="margin-top:0.8rem;">
+    <a href="/profile/" class="quick-link">
+      <div class="ql-icon">👤</div>
+      <div class="ql-title">My Profile</div>
+      <div class="ql-desc">Update your details, skills and health info</div>
+    </a>
+    <a href="/schemes/" class="quick-link">
+      <div class="ql-icon">🏛️</div>
+      <div class="ql-title">Gov Schemes</div>
+      <div class="ql-desc">Browse health, education & welfare schemes</div>
+    </a>
+    <a href="/chatbot/" class="quick-link">
+      <div class="ql-icon">🤖</div>
+      <div class="ql-title">AI Assistant</div>
+      <div class="ql-desc">Get personalized guidance and recommendations</div>
+    </a>
+    <a href="/jobs/" class="quick-link">
+      <div class="ql-icon">✨</div>
+      <div class="ql-title">Job Matches</div>
+      <div class="ql-desc">AI-generated career roles based on your profile</div>
+    </a>
+    <a href="/verify-scheme/" class="quick-link">
+      <div class="ql-icon">🛡️</div>
+      <div class="ql-title">Verify Scheme</div>
+      <div class="ql-desc">Check if a government scheme is real or a scam</div>
+    </a>
+    <a href="/health/" class="quick-link">
+      <div class="ql-icon">🩺</div>
+      <div class="ql-title">Health Advisor</div>
+      <div class="ql-desc">Personalized AI routines and medical schemes</div>
+    </a>
+    <a href="/saved-schemes/" class="quick-link">
+      <div class="ql-icon">🔖</div>
+      <div class="ql-title">Saved Vault</div>
+      <div class="ql-desc">Access your bookmarked government programs</div>
+    </a>
+  </div>
+
+  <div style="margin-top:2.5rem;" class="animate-fade-up delay-500">
+    <div class="card-title" style="margin-bottom:1rem;">Send Feedback</div>
+    <div
+      style="background: var(--card-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border-light); border-radius: 16px; padding: 1.8rem; box-shadow: var(--shadow-sm); transition: all 0.3s ease;">
+      <div style="font-size: 0.95rem; color: var(--text-muted); margin-bottom: 1rem;">Let us know how we can improve.
+      </div>
+      <textarea id="ai-feedback-input" rows="4"
+        style="width: 100%; max-width: 600px; padding: 1rem; background: #18181b; border: 1px solid var(--border-light); border-radius: 12px; color: var(--text-main); font-family: 'Inter', sans-serif; font-size: 0.95rem; resize: none; outline: none; margin-bottom: 1.2rem; transition: border-color 0.2s; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);"
+        placeholder="e.g., I'd love to see more healthcare programs..."
+        onfocus="this.style.borderColor='var(--emerald)'; this.style.boxShadow='0 0 0 3px rgba(16, 185, 129, 0.15)';"
+        onblur="this.style.borderColor='var(--border-light)'; this.style.boxShadow='inset 0 2px 4px rgba(0,0,0,0.2)';"></textarea>
+      <div style="display: flex; align-items: center;">
+        <button class="btn" onclick="submitAIFeedback()">Submit Feedback</button>
+        <span id="fb-msg"
+          style="font-size: 0.875rem; font-weight: 600; color: var(--emerald); margin-left: 1rem; display: none;">✓
+          Feedback saved!</span>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function getCSRF() { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''; }
+
+  function submitAIFeedback() {
+    const input = document.getElementById('ai-feedback-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    fetch('/api/feedback/submit/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+      body: JSON.stringify({ feedback: text })
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          input.value = '';
+          const msg = document.getElementById('fb-msg');
+          msg.style.display = 'inline-block';
+          setTimeout(() => msg.style.display = 'none', 3000);
+        }
+      });
+  }
+</script>
+{% endblock %}

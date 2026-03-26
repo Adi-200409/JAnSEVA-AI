@@ -1,0 +1,39 @@
+{
+  "props": {
+    "pageProps": {}
+  },
+  "page": "/",
+  "query": {},
+  "buildId": "PyrQWFvhI5OganXQtwmQV",
+  "assetPrefix": "https://cdn.myscheme.in",
+  "nextExport": true,
+  "autoExport": true,
+  "isFallback": false,
+  "dynamicIds": [
+    84646,
+    55159,
+    85226,
+    80910,
+    59586
+  ],
+  "locale": "en",
+  "locales": [
+    "en",
+    "hi",
+    "or",
+    "as",
+    "bn",
+    "gu",
+    "kn",
+    "ml",
+    "mr",
+    "pa",
+    "ta",
+    "te",
+    "ur",
+    "ks",
+    "mai"
+  ],
+  "defaultLocale": "en",
+  "scriptLoader": []
+}

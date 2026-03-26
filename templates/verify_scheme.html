@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% block title %}Verify Fake Schemes{% endblock %}
+{% block nav_verify %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .verify-container { max-width: 600px; margin: 0 auto; padding-top: 2rem; }
+  .form-group { margin-bottom: 1.5rem; }
+  .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; }
+  .form-group input { width: 100%; padding: 1rem 1.2rem; border-radius: 12px; background: rgba(39, 39, 42, 0.4); border: 1px solid var(--border-light); color: var(--text-main); font-size: 1rem; transition: all 0.3s ease; }
+  .form-group input:focus { outline: none; border-color: var(--emerald); box-shadow: 0 0 0 2px rgba(16,185,129,0.1); }
+  
+  .btn-verify { width: 100%; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; padding: 1.2rem; border-radius: 12px; font-weight: 700; font-size: 1.1rem; cursor: pointer; color: #fff; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); transition: all 0.3s ease; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
+  .btn-verify:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5); }
+  
+  /* Loading Overlay */
+  #loading { display: none; margin-top: 2rem; flex-direction: column; align-items: center; justify-content: center; color: var(--text-main); text-align: center; background: var(--card-bg); border: 1px dashed var(--border-light); padding: 3rem; border-radius: 20px;}
+  .spinner { width: 40px; height: 40px; border: 4px solid rgba(16, 185, 129, 0.2); border-left-color: var(--emerald); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Result Card */
+  .result-card { display: none; margin-top: 2rem; padding: 2rem; border-radius: 20px; text-align: center; animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1); border: 2px solid transparent; box-shadow: var(--shadow-sm); }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  
+  .result-icon { font-size: 4rem; margin-bottom: 1rem; display: block; }
+  .result-verdict { font-size: 1.8rem; font-weight: 800; margin-bottom: 1rem; letter-spacing: -0.02em; }
+  .result-reason { font-size: 1.05rem; line-height: 1.7; color: var(--text-main); opacity: 0.9; }
+
+  /* Verdict Colors */
+  .verdict-SAFE { background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.5) !important; color: #10b981; }
+  .verdict-SUSPICIOUS { background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.5) !important; color: #f59e0b; }
+  .verdict-FAKE { background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.5) !important; color: #ef4444; }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page animate-fade-up delay-100">
+  <div class="verify-container">
+    <div style="text-align: center; margin-bottom: 3rem;">
+        <div class="page-tag inline-block mb-3">AI Security</div>
+        <div class="page-title" style="margin-bottom: 0.5rem;">Fake Scheme Detector</div>
+        <div class="page-sub">Protect yourself from digital scams. Our AI instantly analyzes URLs and scheme names to verify their legitimacy.</div>
+    </div>
+
+    <div class="white-box animate-slide-in delay-200" style="padding: 2.5rem;">
+      <div class="form-group">
+        <label>Scheme Name</label>
+        <input type="text" id="s_name" placeholder="E.g. Pradhan Mantri Awas Yojana" autocomplete="off">
+      </div>
+      <div class="form-group" style="margin-bottom: 2rem;">
+        <label>Scheme Website URL (Optional)</label>
+        <input type="url" id="s_url" placeholder="E.g. https://pmayg.nic.in" autocomplete="off">
+      </div>
+      <button class="btn-verify" onclick="verifyScheme()">
+        <span>🛡️ Verify Legitimacy</span>
+      </button>
+    </div>
+
+    <!-- Loading UI -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <h3 style="font-size: 1.2rem; font-weight: 600;">Analyzing Threat Level...</h3>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">Cross-referencing government databases & domain registries.</p>
+    </div>
+
+    <!-- Result Card -->
+    <div id="result-card" class="result-card">
+      <span id="res-icon" class="result-icon"></span>
+      <div id="res-verdict" class="result-verdict"></div>
+      <div id="res-reason" class="result-reason"></div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function getCSRF() { return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || ''; }
+
+  function verifyScheme() {
+    const name = document.getElementById('s_name').value.trim();
+    const url = document.getElementById('s_url').value.trim();
+    
+    if(!name && !url) {
+        alert("Please enter a Scheme Name or URL to verify.");
+        return;
+    }
+
+    // Hide old result, show loading
+    document.getElementById('result-card').style.display = 'none';
+    document.getElementById('result-card').className = 'result-card'; // reset classes
+    document.getElementById('loading').style.display = 'flex';
+
+    fetch('/api/schemes/verify/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+      body: JSON.stringify({ name: name, url: url })
+    })
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('loading').style.display = 'none';
+      if(data.success) {
+        showResult(data.verdict, data.reason);
+      } else {
+        alert("Error: " + (data.error || "Verification failed."));
+      }
+    })
+    .catch(() => {
+      document.getElementById('loading').style.display = 'none';
+      alert('Network Error connecting to AI engine.');
+    });
+  }
+
+  function showResult(verdict, reason) {
+    const rc = document.getElementById('result-card');
+    const ri = document.getElementById('res-icon');
+    const rv = document.getElementById('res-verdict');
+    const rr = document.getElementById('res-reason');
+
+    let v = verdict.toUpperCase();
+    rc.classList.add('verdict-' + v);
+    
+    if(v === 'SAFE') {
+        ri.innerText = '✅';
+        rv.innerText = 'Highly Likely SAFE';
+    } else if(v === 'SUSPICIOUS') {
+        ri.innerText = '⚠️';
+        rv.innerText = 'SUSPICIOUS / Verify Carefully';
+    } else if(v === 'FAKE') {
+        ri.innerText = '🚨';
+        rv.innerText = 'DANGER: LIKELY SCAM';
+    } else {
+        ri.innerText = '❓';
+        rv.innerText = 'UNKNOWN';
+        rc.classList.add('verdict-SUSPICIOUS');
+    }
+
+    rr.innerText = reason;
+    rc.style.display = 'block';
+  }
+</script>
+{% endblock %}

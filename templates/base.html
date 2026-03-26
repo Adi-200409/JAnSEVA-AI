@@ -1,0 +1,262 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JANSEVA AI — {% block title %}{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-color: #000000;
+      --card-bg: #09090b;
+      --card-border: #27272a;
+      --text-main: #ffffff;
+      --text-muted: #a1a1aa;
+      --border-light: #27272a;
+      
+      --emerald: #10b981;
+      --emerald-hover: #34d399;
+      --emerald-glow: rgba(16, 185, 129, 0.15);
+      
+      --danger: #ef4444;
+      --success: #10b981;
+      
+      --shadow-sm: 0 4px 10px rgba(0, 0, 0, 0.5);
+      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.8);
+      --shadow-glow: 0 0 20px var(--emerald-glow);
+    }
+
+    html, body { min-height: 100%; overflow-x: hidden; }
+
+    /* ── Animated Decorator ── */
+    .bg-decorator {
+      position: fixed; inset: 0; z-index: -2; pointer-events: none;
+      background: #0a0a0a;
+    }
+    .bg-decorator::before {
+      content: ''; position: absolute; top: -50%; left: 50%; width: 100vw; height: 100vw;
+      transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.03) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-color);
+      color: var(--text-main);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Animations ── */
+    .animate-fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateY(20px); }
+    .animate-slide-in { animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; transform: translateX(-20px); }
+    .delay-100 { animation-delay: 100ms; }
+    .delay-200 { animation-delay: 200ms; }
+    .delay-300 { animation-delay: 300ms; }
+    .delay-400 { animation-delay: 400ms; }
+    .delay-500 { animation-delay: 500ms; }
+    
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+    /* ── Navbar ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(10, 10, 10, 0.8);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-light);
+      padding: 0 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; transition: transform 0.2s ease; }
+    .logo:hover { transform: scale(1.02); }
+    .logo-box {
+      width: 32px; height: 32px;
+      background: var(--emerald); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    }
+    .logo-dot { width: 12px; height: 12px; border-radius: 50%; background: #000; }
+    .logo-name { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; color: var(--text-main); }
+
+    .nav-links { display: flex; align-items: center; gap: 1rem; }
+    .nav-link {
+      font-size: 0.875rem; font-weight: 500;
+      color: var(--text-muted); text-decoration: none;
+      padding: 0.5rem 0.75rem; border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+    .nav-link:hover { color: var(--text-main); background: rgba(255,255,255,0.05); }
+    .nav-link.active { color: var(--emerald); font-weight: 600; background: rgba(16, 185, 129, 0.1); }
+
+    .nav-right { display: flex; align-items: center; gap: 1.5rem; }
+    .nav-user { font-size: 0.875rem; color: var(--text-muted); font-weight: 500; }
+
+    .btn-logout {
+      font-family: 'Inter', sans-serif; font-size: 0.875rem; font-weight: 600;
+      background: #18181b; border: 1px solid var(--border-light);
+      color: var(--text-white); padding: 0.4rem 1rem;
+      border-radius: 8px; cursor: pointer; transition: all 0.2s ease;
+    }
+    .btn-logout:hover { background: #27272a; }
+
+    /* ── Page wrapper ── */
+    .page { position: relative; z-index: 1; max-width: 1200px; margin: 0 auto; padding: 3rem 2rem; }
+
+    /* ── Shared card ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px; padding: 1.8rem;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: #3f3f46; }
+    .card-title {
+      font-size: 1.1rem; font-weight: 600;
+      color: var(--text-main); margin-bottom: 1.2rem;
+      letter-spacing: -0.01em;
+    }
+
+    /* ── Badge ── */
+    .badge {
+      display: inline-flex; align-items: center; padding: 0.25rem 0.75rem;
+      border-radius: 9999px; font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-on  { background: rgba(16, 185, 129, 0.1); color: var(--emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-off { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-info{ background: rgba(255, 255, 255, 0.1); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); }
+
+    /* ── Live dot ── */
+    .live-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--emerald); display: inline-block;
+      box-shadow: 0 0 10px var(--emerald);
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.8); } }
+
+    /* ── Button ── */
+    .btn {
+      font-family: inherit; font-size: 0.875rem; font-weight: 600;
+      padding: 0.75rem 1.5rem; border-radius: 8px; border: none;
+      background: var(--emerald); color: #000;
+      cursor: pointer; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+    }
+    .btn:hover { background: var(--emerald-hover); transform: translateY(-2px); box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+    .btn:active { transform: translateY(0); }
+
+    /* ── Page header ── */
+    .page-tag  { 
+      font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; 
+      color: var(--emerald); margin-bottom: 0.5rem; display: inline-block;
+    }
+    .page-title{ font-size: 2.5rem; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em; line-height: 1.1; }
+    .page-sub  { font-size: 1.05rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 3rem; max-width: 600px; font-weight: 500;}
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar       { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-color); }
+    ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+    /* ── Hamburger Button ── */
+    .nav-toggle {
+      display: none; background: none; border: none; cursor: pointer;
+      flex-direction: column; gap: 5px; padding: 4px; z-index: 110;
+    }
+    .nav-toggle span {
+      display: block; width: 22px; height: 2px; background: var(--text-main);
+      border-radius: 2px; transition: all 0.3s ease;
+    }
+    .nav-toggle.open span:nth-child(1) { transform: rotate(45deg) translate(5px,5px); }
+    .nav-toggle.open span:nth-child(2) { opacity: 0; }
+    .nav-toggle.open span:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .nav-toggle { display: flex; }
+
+      nav { flex-wrap: wrap; height: auto; min-height: 56px; padding: 0.75rem 1rem; gap: 0.5rem; }
+
+      .nav-links {
+        display: none; flex-direction: column; width: 100%; gap: 0.25rem;
+        padding-top: 0.75rem; border-top: 1px solid var(--border-light);
+      }
+      .nav-links.show { display: flex; }
+      .nav-link { width: 100%; padding: 0.65rem 0.75rem; }
+
+      .nav-right {
+        display: none; flex-direction: column; width: 100%; gap: 0.5rem;
+        align-items: flex-start; padding-top: 0.5rem;
+        border-top: 1px solid var(--border-light);
+      }
+      .nav-right.show { display: flex; }
+
+      .page { padding: 1.5rem 1rem; }
+      .page-title { font-size: 1.6rem; }
+      .page-sub { font-size: 0.9rem; margin-bottom: 1.5rem; }
+    }
+
+    @media (max-width: 480px) {
+      .page { padding: 1.25rem 0.75rem; }
+      .page-title { font-size: 1.35rem; }
+      .btn { padding: 0.6rem 1rem; font-size: 0.8rem; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+<div class="bg-decorator"></div>
+
+<!-- Navbar -->
+<nav>
+  <a href="/dashboard/" class="logo">
+    <div class="logo-box"><div class="logo-dot"></div></div>
+    <div class="logo-name">JANSEVA AI</div>
+  </a>
+
+  <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <div class="nav-links" id="navLinks">
+    <a href="/dashboard/" class="nav-link {% block nav_dashboard %}{% endblock %}">Dashboard</a>
+    <a href="/profile/"   class="nav-link {% block nav_profile %}{% endblock %}">Profile</a>
+    <a href="/schemes/"   class="nav-link {% block nav_schemes %}{% endblock %}">Schemes</a>
+    <a href="/chatbot/"   class="nav-link {% block nav_chatbot %}{% endblock %}">AI Assistant</a>
+    {% if user.is_staff %}
+    <a href="/admin-dashboard/" class="nav-link {% block nav_admin %}{% endblock %}">Admin Panel</a>
+    {% endif %}
+  </div>
+
+  <div class="nav-right" id="navRight">
+    <span class="nav-user">{{ user.email }}</span>
+    <form method="post" action="/api/auth/logout/" style="display:inline;">
+      {% csrf_token %}
+      <button type="submit" class="btn-logout">Sign Out</button>
+    </form>
+  </div>
+</nav>
+
+<script>
+  document.getElementById('navToggle').addEventListener('click', function() {
+    this.classList.toggle('open');
+    document.getElementById('navLinks').classList.toggle('show');
+    document.getElementById('navRight').classList.toggle('show');
+  });
+</script>
+
+{% block content %}{% endblock %}
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

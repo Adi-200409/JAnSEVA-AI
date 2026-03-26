@@ -1,0 +1,464 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JANSEVA AI — The Future</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --emerald: #10b981;
+    --emerald-glow: rgba(16, 185, 129, 0.4);
+    --black-bg: #0a0a0a;
+    --muted: #52525B;
+    --text-white: #ffffff;
+    --text-gray: #a1a1aa;
+    --border-dark: #27272a;
+  }
+
+  html, body { 
+    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    background-color: var(--emerald);
+    color: var(--text-white);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Main Container acting as the "app window" */
+  .app-window {
+    margin: 1.5rem;
+    min-height: calc(100vh - 3rem);
+    background-color: var(--black-bg);
+    border-radius: 32px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+  }
+
+  /* ── Hero Section ── */
+  .hero-section {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; padding: 8rem 2rem 10rem 2rem;
+    text-align: center; position: relative; z-index: 10;
+  }
+
+  .hero-title {
+    font-size: clamp(3rem, 7vw, 6.5rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+    margin-bottom: 2rem;
+  }
+  .hero-title .muted { color: var(--muted); display: block; }
+  .hero-title .highlight { color: var(--text-white); display: flex; align-items: center; justify-content: center; gap: 0.5rem; flex-wrap: wrap; }
+
+  /* Icons inside typography */
+  .h-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    vertical-align: middle;
+  }
+  .icon-fingerprint {
+    width: clamp(2.5rem, 6vw, 5rem); height: clamp(2.5rem, 6vw, 5rem);
+    color: var(--emerald);
+    margin-right: -0.5rem;
+  }
+  .icon-star {
+    width: clamp(2.5rem, 6vw, 5rem); height: clamp(2.5rem, 6vw, 5rem);
+    color: var(--emerald);
+    filter: drop-shadow(0 0 15px var(--emerald-glow));
+    animation: star-pulse 3s infinite alternate;
+  }
+  @keyframes star-pulse { 0% { filter: drop-shadow(0 0 10px rgba(16,185,129,0.2)); transform: scale(0.98); } 100% { filter: drop-shadow(0 0 25px rgba(16,185,129,0.8)); transform: scale(1.05); } }
+
+  .hero-desc {
+    font-size: clamp(1rem, 1.5vw, 1.25rem);
+    color: var(--text-gray);
+    max-width: 600px; line-height: 1.6;
+    margin-bottom: 3.5rem;
+    font-weight: 500;
+  }
+
+  /* CTA Button */
+  .cta-wrapper {
+    position: relative; display: inline-block;
+  }
+  .cta-wrapper::before {
+    content: ''; position: absolute; inset: -15px;
+    background: radial-gradient(circle, var(--emerald-glow) 0%, transparent 70%);
+    z-index: 0; opacity: 0.8; filter: blur(15px);
+  }
+  .cta-btn {
+    position: relative; z-index: 1;
+    background: transparent; border: 1px solid var(--border-dark);
+    color: var(--text-white); font-family: inherit; font-size: 1.1rem; font-weight: 600;
+    padding: 1rem 2.5rem; border-radius: 12px; cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+  }
+  .cta-btn:hover { border-color: var(--text-gray); transform: translateY(-2px); background: rgba(255,255,255,0.03); }
+
+  /* Cookie Banner */
+  .cookie-banner {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: #18181b; border: 1px solid var(--border-dark);
+    border-radius: 16px; padding: 1.25rem 1.5rem;
+    display: flex; align-items: center; gap: 2rem;
+    width: calc(100% - 3rem); max-width: 800px; z-index: 9999;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+  }
+  .cookie-text { font-size: 0.8rem; color: var(--text-gray); line-height: 1.5; flex: 1; text-align: left; }
+  .cookie-actions { display: flex; gap: 0.75rem; }
+  .btn-decline { background: #27272a; color: white; border: none; padding: 0.5rem 1rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+  .btn-decline:hover { background: #3f3f46; }
+  .btn-accept { background: var(--emerald); color: black; border: none; padding: 0.5rem 1.25rem; border-radius: 8px; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+  .btn-accept:hover { background: #34d399; }
+
+  /* ── Bottom White Section (Auth Forms) ── */
+  .bottom-white-panel {
+    background: #ffffff;
+    border-top-left-radius: 40px; border-top-right-radius: 40px;
+    color: #0f172a; padding: 5rem 2rem;
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; z-index: 20;
+    margin-top: -2rem; /* Pull up to overlap */
+    min-height: 600px;
+  }
+  
+  .auth-container { width: 100%; max-width: 480px; }
+  .tabs { display: flex; gap: 2rem; margin-bottom: 2.5rem; border-bottom: 2px solid #e2e8f0; }
+  .tab-btn {
+    background: none; border: none; cursor: pointer;
+    font-family: inherit; font-size: 1.1rem; font-weight: 600;
+    color: #64748b; padding: 0.75rem 0;
+    position: relative; transition: color 0.2s;
+  }
+  .tab-btn::after {
+    content: ''; position: absolute; bottom: -2px; left: 0; width: 0; height: 2px;
+    background: var(--emerald); transition: width 0.3s ease;
+  }
+  .tab-btn.active { color: #0f172a; }
+  .tab-btn.active::after { width: 100%; }
+
+  .fsec { display: none; }
+  .fsec.active { display: block; animation: fin 0.4s ease forwards; }
+  @keyframes fin { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .form-title { font-size: 2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.5rem; letter-spacing: -0.02em; }
+  .form-desc { font-size: 1rem; color: #64748b; margin-bottom: 2.5rem; }
+
+  /* Fields */
+  .field { margin-bottom: 1.5rem; }
+  label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 0.5rem; }
+  input[type="text"], input[type="email"], input[type="password"] {
+    width: 100%; padding: 0.875rem 1rem;
+    font-family: inherit; font-size: 1rem; color: #0f172a;
+    background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 12px;
+    outline: none; transition: all 0.2s ease;
+  }
+  input::placeholder { color: #94a3b8; }
+  input:focus { border-color: var(--emerald); box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); background: #fff;}
+  input.bad { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }
+
+  .ferr { font-size: 0.85rem; color: #ef4444; margin-top: 0.5rem; display: none; font-weight: 500; }
+  .ferr.show { display: block; animation: shake 0.4s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-4px);} 75%{transform:translateX(4px);} }
+
+  .forgot { text-align: right; margin-top: -0.5rem; margin-bottom: 1.5rem; }
+  .forgot a { font-size: 0.875rem; color: var(--emerald); text-decoration: none; font-weight: 600; }
+  .forgot a:hover { text-decoration: underline; }
+
+  .terms { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 0.5rem; }
+  .terms input[type="checkbox"] { flex-shrink: 0; width: 18px; height: 18px; margin-top: 2px; accent-color: var(--emerald); cursor: pointer; }
+  .terms label { font-size: 0.9rem; color: #64748b; line-height: 1.5; cursor: pointer; }
+  .terms label a { color: var(--emerald); text-decoration: none; font-weight: 600; }
+
+  .btn-submit {
+    width: 100%; margin-top: 1.5rem; padding: 1rem;
+    background: #000; border: none; border-radius: 12px;
+    color: #fff; font-family: inherit;
+    font-size: 1.05rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  .btn-submit:hover { background: #18181b; transform: translateY(-2px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15); }
+  .btn-submit:active { transform: translateY(0); }
+
+  .toast { display: none; margin-top: 1.5rem; padding: 1rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; }
+  .toast.ok { background: #ecfdf5; color: #065f46; display: block; border: 1px solid #10b981; }
+  .toast.err { background: #fef2f2; color: #991b1b; display: block; border: 1px solid #ef4444; }
+
+  /* Animations for load */
+  .fade-in-up { animation: fadeInUp 0.8s cubic-bezier(0.16,1,0.3,1) forwards; opacity: 0; transform: translateY(30px); }
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 800px) {
+    .app-window { margin: 0; border-radius: 0; min-height: 100vh; }
+    .hero-title { font-size: 2.5rem; }
+    .hero-section { padding: 4rem 1.5rem; }
+    .cookie-banner { flex-direction: column; bottom: 1.5rem; padding: 1.5rem; text-align: center; gap: 1rem; width: calc(100% - 2rem); }
+    .cookie-text { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-window">
+  
+  <div class="hero-section">
+    <h1 class="hero-title fade-in-up">
+      <span class="muted">JANSEVA AI<br>that empowers<br></span>
+      <span class="highlight">
+        <span class="h-icon" style="margin-left: 0.5rem;"><svg class="icon-fingerprint" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"></path><path d="M12 8v4"></path><path d="M12 16h.01"></path><path d="M8 12c0-2.2 1.8-4 4-4"></path><path d="M16 12c0-2.2-1.8-4-4-4"></path></svg></span> 
+        people + 
+        <span class="h-icon"><svg class="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span> 
+        AI
+      </span>
+    </h1>
+    
+    <p class="hero-desc fade-in-up delay-100">
+      We help you map your career, track essential government schemes, and access vital health services to thrive in a connected world.
+    </p>
+
+    <div class="cta-wrapper fade-in-up delay-200">
+      <button class="cta-btn" onclick="scrollToAuth()">Join The Community</button>
+    </div>
+
+    <div class="cookie-banner fade-in-up delay-300" id="cookie-banner">
+      <div class="cookie-text">
+        We set essential cookies to help run our websites and services. By clicking Accept, you consent to the use of additional cookies for analytics and marketing. Feel free to update your settings at any time. Read more in our <span style="color:var(--emerald);cursor:pointer;">Cookie Policy</span>.
+      </div>
+      <div class="cookie-actions">
+        <button class="btn-decline" onclick="hideCookies()">Decline</button>
+        <button class="btn-accept" onclick="hideCookies()">Accept</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-white-panel" id="auth-section">
+    <div class="auth-container">
+      
+      <div class="tabs">
+        <button class="tab-btn active" onclick="sw('login', this)">Sign In</button>
+        <button class="tab-btn"        onclick="sw('signup', this)">Create Account</button>
+      </div>
+
+      <!-- Login -->
+      <div class="fsec active" id="sec-login">
+        <div class="form-title">Welcome back</div>
+        <div class="form-desc">Please enter your details to sign in.</div>
+        <form onsubmit="doLogin(event)" novalidate>
+          <div class="field">
+            <label for="le">Email address</label>
+            <input type="email" id="le" placeholder="you@example.com">
+            <div class="ferr" id="le-e">Enter a valid email address.</div>
+          </div>
+          <div class="field">
+            <label for="lp">Password</label>
+            <input type="password" id="lp" placeholder="••••••••">
+            <div class="ferr" id="lp-e">Password is required.</div>
+          </div>
+          <div class="forgot"><a href="#" onclick="showForgot(event)">Forgot password?</a></div>
+          <button type="submit" class="btn-submit">Sign In</button>
+          <div class="toast" id="lt"></div>
+        </form>
+      </div>
+
+      <!-- Signup -->
+      <div class="fsec" id="sec-signup">
+        <div class="form-title">Join the platform</div>
+        <div class="form-desc">Register to map and track your skills natively.</div>
+        <form onsubmit="doSignup(event)" novalidate>
+          <input type="hidden" name="csrfmiddlewaretoken" value="dummy">
+          <div class="field">
+            <label for="sn">Full Name</label>
+            <input type="text" id="sn" placeholder="e.g. Jane Doe">
+            <div class="ferr" id="sn-e">Full name is required.</div>
+          </div>
+          <div class="field">
+            <label for="se">Email address</label>
+            <input type="email" id="se" placeholder="you@example.com">
+            <div class="ferr" id="se-e">Enter a valid email address.</div>
+          </div>
+          <div class="field">
+            <label for="sp">Password</label>
+            <input type="password" id="sp" placeholder="Min. 8 characters">
+            <div class="ferr" id="sp-e">Password must be at least 8 characters.</div>
+          </div>
+          <div class="terms">
+            <input type="checkbox" id="stm">
+            <label for="stm">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>.</label>
+          </div>
+          <div class="ferr" id="stm-e" style="margin-bottom:0.5rem;">You must accept the terms.</div>
+          <button type="submit" class="btn-submit">Create Account</button>
+          <div class="toast" id="st"></div>
+        </form>
+      </div>
+      
+      <!-- Forgot Password -->
+      <div class="fsec" id="sec-forgot">
+        <div class="form-title">Reset Password</div>
+        <div class="form-desc" id="forgot-desc">Enter your email and we'll send you a recovery link.</div>
+        
+        <!-- Step 1: Email -->
+        <form id="forgot-step-1" onsubmit="reqLink(event)" novalidate>
+          <div class="field">
+            <label for="fe">Email address</label>
+            <input type="email" id="fe" placeholder="you@example.com">
+            <div class="ferr" id="fe-e">Enter a valid email address.</div>
+          </div>
+          <button type="submit" class="btn-submit" id="btn-link">Send Recovery Link</button>
+          <div style="text-align:center; margin-top:1.5rem;"><a href="#" onclick="backToLogin(event)" style="color:#64748b; font-size:0.9rem; font-weight:600; text-decoration:none;">Back to Login</a></div>
+          <div class="toast" id="ft1" style="display:none; margin-top: 1rem; padding: 1rem; border-radius: 8px; font-size: 0.95rem; font-weight: 600; text-align: center;"></div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function scrollToAuth() {
+    document.getElementById('auth-section').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function hideCookies() {
+    document.getElementById('cookie-banner').style.display = 'none';
+  }
+
+  /* Auth Logic perfectly preserved */
+  function sw(tab, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.fsec').forEach(s => s.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    document.getElementById('sec-' + tab).classList.add('active');
+  }
+
+  function showForgot(e) {
+    if(e) e.preventDefault();
+    document.querySelectorAll('.fsec').forEach(s => s.classList.remove('active'));
+    document.getElementById('sec-forgot').classList.add('active');
+  }
+
+  function backToLogin(e) {
+    if(e) e.preventDefault();
+    sw('login', document.querySelectorAll('.tab-btn')[0]);
+  }
+
+  function setErr(inputId, errId, show) {
+    const input = document.getElementById(inputId);
+    const err   = document.getElementById(errId);
+    if (input) input.classList.toggle('bad', show);
+    if (err)   err.classList.toggle('show', show);
+    return show;
+  }
+
+  function showToast(id, msg, type) {
+    const el = document.getElementById(id);
+    el.className  = 'toast ' + type;
+    el.textContent = msg;
+  }
+
+  function getCSRF() {
+    return document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+  }
+
+  function doLogin(e) {
+    e.preventDefault();
+    const email    = document.getElementById('le').value.trim();
+    const password = document.getElementById('lp').value;
+    let invalid    = setErr('le', 'le-e', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+    invalid        = setErr('lp', 'lp-e', !password) || invalid;
+    if (invalid) return;
+
+    fetch('/api/auth/login/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+      body: JSON.stringify({ email, password })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast('lt', '✓ Successfully authenticated. Redirecting...', 'ok');
+        setTimeout(() => window.location.href = '/dashboard/', 1200);
+      } else {
+        showToast('lt', '✗ ' + (data.error || 'Authentication failed.'), 'err');
+      }
+    })
+    .catch(() => showToast('lt', '✗ Cannot reach server.', 'err'));
+  }
+
+  function doSignup(e) {
+    e.preventDefault();
+    const full_name = document.getElementById('sn').value.trim();
+    const email     = document.getElementById('se').value.trim();
+    const password  = document.getElementById('sp').value;
+    const agreed    = document.getElementById('stm').checked;
+
+    let invalid = setErr('sn', 'sn-e', full_name.length < 2);
+    invalid     = setErr('se', 'se-e', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) || invalid;
+    invalid     = setErr('sp', 'sp-e', password.length < 8) || invalid;
+
+    const termsErr = document.getElementById('stm-e');
+    if (!agreed) { termsErr.classList.add('show'); invalid = true; }
+    else           termsErr.classList.remove('show');
+    if (invalid) return;
+
+    fetch('/api/auth/signup/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+      body: JSON.stringify({ full_name, email, password })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast('st', '✓ Account created successfully!', 'ok');
+        setTimeout(() => document.querySelectorAll('.tab-btn')[0].click(), 1600);
+      } else {
+        showToast('st', '✗ ' + (data.error || 'Registration failed.'), 'err');
+      }
+    })
+    .catch(() => showToast('st', '✗ Cannot reach server.', 'err'));
+  }
+
+  /* Forgot Password Logic - Link Based */
+  function reqLink(e) {
+    e.preventDefault();
+    const email = document.getElementById('fe').value.trim();
+    if (setErr('fe', 'fe-e', !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) return;
+
+    const btn = document.getElementById('btn-link');
+    btn.innerText = 'Sending...'; btn.disabled = true;
+
+    fetch('/api/auth/forgot-password/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRF() },
+      body: JSON.stringify({ email })
+    })
+    .then(r => r.json())
+    .then(data => {
+      btn.innerText = 'Send Recovery Link'; btn.disabled = false;
+      if (data.success) {
+        showToast('ft1', '✓ Link sent successfully to your email!', 'ok');
+      } else {
+        showToast('ft1', '✗ ' + (data.error || 'Failed to send link.'), 'err');
+      }
+    })
+    .catch(() => {
+      btn.innerText = 'Send Recovery Link'; btn.disabled = false;
+      showToast('ft1', '✗ Cannot reach server.', 'err');
+    });
+  }
+</script>
+</body>
+</html>
